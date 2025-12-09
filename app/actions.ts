@@ -111,3 +111,30 @@ export async function resetStreak(streakId: number): Promise<ActionResponse> {
         return { success: false, error: "Failed to reset streak." };
     }
 }
+
+// app/actions.ts (New function added)
+// ... (imports and existing functions: calculateStreak, getAllStreaks, createStreak, resetStreak)
+
+// --- Action 4: Delete a Specific Streak ---
+export async function deleteStreak(streakId: number): Promise<ActionResponse> {
+    try {
+        if (!streakId) {
+            return { success: false, error: "Streak ID is required for deletion." };
+        }
+
+        // Use Prisma to delete the record based on its ID
+        await prisma.streak.delete({
+            where: { id: streakId },
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        // P2025 is the error code for 'record to delete does not exist'
+        if (error.code === 'P2025') {
+            console.warn(`Attempted to delete non-existent streak ID: ${streakId}`);
+            return { success: false, error: "Streak not found or already deleted." };
+        }
+        console.error("Prisma error deleting streak:", error);
+        return { success: false, error: "Failed to delete streak." };
+    }
+}

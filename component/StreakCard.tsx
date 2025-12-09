@@ -1,41 +1,39 @@
 // components/StreakCard.tsx
 "use client";
 
+import { useState, FormEvent } from 'react';
 import { useFormStatus } from 'react-dom';
-import { resetStreak } from '@/app/actions';
+import { resetStreak, deleteStreak } from '@/app/actions';
 import { StreakData } from '@/types/streak';
-import { FormEvent } from 'react'; // Import FormEvent for correct typing
 
 // --- Props for StreakCard ---
 interface StreakCardProps {
     streak: StreakData;
-    onResetSuccess: () => Promise<void>; // Function to refresh the list in the parent
+    onResetSuccess: () => Promise<void>;
+    onDeleteSuccess: (streakId: number) => Promise<void>;
 }
 
-// --- Sub-Component for Reset Button (Client Component) ---
+// --- Sub-Component: Reset Button ---
 interface ResetButtonProps {
     streakId: number;
     onResetSuccess: () => Promise<void>;
 }
 
 function ResetButton({ streakId, onResetSuccess }: ResetButtonProps) {
+    // useFormStatus is used to automatically get the pending state of the form it's inside.
     const { pending } = useFormStatus();
 
-    // The handler function is the key to managing the reset flow
+    // Handler for resetting the streak
     const handleReset = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault(); // Prevent the default form submission
+        e.preventDefault();
 
-        // 1. Confirmation
-        if (!window.confirm(`Are you sure you want to reset this streak? This means you had a slip.`)) {
+        if (!window.confirm("Are you sure you want to reset this streak? This means you had a slip.")) {
             return;
         }
 
-        // 2. Call Server Action
         const result = await resetStreak(streakId);
 
-        // 3. Handle Result
         if (result.success) {
-            // Refresh the parent list (Home page)
             onResetSuccess();
         } else {
             alert(`Reset failed: ${result.error}`);
@@ -43,14 +41,13 @@ function ResetButton({ streakId, onResetSuccess }: ResetButtonProps) {
     };
 
     return (
-        // The button is placed inside a <form> for useFormStatus to work correctly.
-        // We use the onSubmit handler for custom logic, including confirmation.
-        <form onSubmit={handleReset}>
+        // Wrap button in a form to use useFormStatus
+        <form onSubmit={handleReset} className="flex-grow">
             <button
-                type="submit" // Use type="submit" for form submission
+                type="submit"
                 disabled={pending}
-                // Enhanced Tailwind Classes for the "Slip! Reset" button
-                className="mt-6 bg-red-800 hover:bg-red-900 text-white font-bold py-3 px-6 rounded-xl transition duration-150 disabled:opacity-50 w-full shadow-lg shadow-red-900/50"
+                // Styling: Primary action (reset) uses the aggressive red color
+                className="bg-red-800 hover:bg-red-900 text-white font-bold py-3 px-6 rounded-xl transition duration-150 disabled:opacity-50 w-full shadow-lg shadow-red-900/50"
             >
                 {pending ? "Resetting..." : "Slip! Reset"}
             </button>
@@ -58,12 +55,49 @@ function ResetButton({ streakId, onResetSuccess }: ResetButtonProps) {
     );
 }
 
+// --- Sub-Component: Delete Button ---
+interface DeleteButtonProps {
+    streakId: number;
+    onDeleteSuccess: (streakId: number) => Promise<void>;
+}
+
+function DeleteButton({ streakId, onDeleteSuccess }: DeleteButtonProps) {
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!window.confirm("WARNING: Are you sure you want to permanently delete this streak? All data will be lost.")) {
+            return;
+        }
+
+        setDeleting(true);
+        const result = await deleteStreak(streakId);
+        setDeleting(false);
+
+        if (result.success) {
+            onDeleteSuccess(streakId); // Trigger list update in parent (optimistic removal)
+        } else {
+            alert(`Deletion failed: ${result.error}`);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleDelete}
+            disabled={deleting}
+            // Styling: Secondary action (delete) uses muted gray/red
+            className="bg-gray-800 hover:bg-red-700/30 text-gray-400 font-semibold py-3 px-3 text-sm rounded-xl transition duration-150 disabled:opacity-50 border border-gray-700"
+        >
+            {deleting ? "Deleting..." : "🗑️ Delete"}
+        </button>
+    );
+}
+
 // --- Main Streak Card Component ---
-export default function StreakCard({ streak, onResetSuccess }: StreakCardProps) {
+export default function StreakCard({ streak, onResetSuccess, onDeleteSuccess }: StreakCardProps) {
     const { id, name, currentStreak, maxStreak, startDate } = streak;
 
     return (
-        // Enhanced Card Styling: Dark background, premium border, and subtle shadow
+        // Beautiful UI Styling: Dark background, premium border, and subtle shadow
         <div className="bg-gray-900 p-8 rounded-2xl shadow-2xl border-2 border-teal-800 hover:border-teal-500 transition duration-300 transform hover:scale-[1.02] shadow-teal-900/50">
 
             <h3 className="text-3xl font-extrabold text-center mb-4 text-teal-400 uppercase tracking-widest truncate">
@@ -79,18 +113,21 @@ export default function StreakCard({ streak, onResetSuccess }: StreakCardProps) 
                 <p className="text-xl font-semibold mt-1 text-gray-300">Days</p>
             </div>
 
+            {/* Record and Date Info */}
             <div className="flex justify-between text-base text-gray-400 border-t border-gray-700 pt-3 mt-4">
                 <p className="font-medium">
-                    {/* Record Styling */}
                     <span className='font-bold'>Record:</span> <span className="text-yellow-400 font-bold">{maxStreak} Days</span>
                 </p>
                 <p className="text-gray-500">
-                    {/* Start Date Styling */}
                     <span className='font-bold text-gray-400'>Started:</span> <span className="text-gray-300">{startDate}</span>
                 </p>
             </div>
 
-            <ResetButton streakId={id} onResetSuccess={onResetSuccess} />
+            {/* ACTION BUTTONS CONTAINER (Reset + Delete) */}
+            <div className="flex items-stretch gap-3 pt-6 border-t border-gray-800 mt-6">
+                <ResetButton streakId={id} onResetSuccess={onResetSuccess} />
+                <DeleteButton streakId={id} onDeleteSuccess={onDeleteSuccess} />
+            </div>
 
         </div>
     );

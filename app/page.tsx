@@ -2,7 +2,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getAllStreaks, createStreak } from './actions';
+// Import the new deleteStreak Server Action
+import { getAllStreaks, createStreak, deleteStreak } from './actions';
 import { StreakData } from '@/types/streak';
 import NewStreakForm from '@/component/NewStreakForm';
 import StreakCard from '@/component/StreakCard';
@@ -35,12 +36,21 @@ export default function Home() {
     }
   };
 
-  // The function to pass to StreakCard for deleting a streak (Placeholder for future feature)
+  // FIX 2: Implementation of handleDeleteStreak
   const handleDeleteStreak = async (id: number) => {
-    // Implement delete action here, then await loadStreaks();
-    alert(`Attempting to delete streak with ID: ${id}`);
-    // await deleteStreak(id);
-    // await loadStreaks();
+    // Optimistically remove the streak from the UI first for better UX
+    setStreaks(prev => prev.filter(s => s.id !== id));
+
+    const result = await deleteStreak(id); // Call the Server Action
+
+    if (result.success) {
+      // Success! The list is already updated optimistically.
+      console.log(`Streak ID ${id} deleted successfully.`);
+    } else {
+      // Failure: Alert user and reload the full list to revert the optimistic update
+      alert(`Error deleting streak: ${result.error}. Reloading data.`);
+      await loadStreaks();
+    }
   };
 
   useEffect(() => {
@@ -57,7 +67,6 @@ export default function Home() {
   );
 
   return (
-    // Applied deep gray background (bg-gray-950) from the UI plan
     <div className="min-h-screen bg-gray-950 text-white p-8">
       {/* Enhanced main title styling: huge, bold, and accented with teal-400 */}
       <h1 className="text-6xl font-black mb-10 pt-4 text-center text-teal-400 tracking-wider">
@@ -86,8 +95,8 @@ export default function Home() {
               key={streak.id}
               streak={streak}
               onResetSuccess={loadStreaks}
-            // Passing placeholder for future delete feature
-            // onDelete={handleDeleteStreak} 
+              // FIX 3: PASS THE REQUIRED PROP TO RESOLVE THE TYPESCRIPT ERROR
+              onDeleteSuccess={handleDeleteStreak}
             />
           ))
         )}
