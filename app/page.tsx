@@ -3,12 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import { getAllStreaks, createStreak } from './actions';
-import StreakCard from '@/component/StreakCard'
-import { StreakData } from '@/types/streak'; // Import the type
+import { StreakData } from '@/types/streak';
 import NewStreakForm from '@/component/NewStreakForm';
+import StreakCard from '@/component/StreakCard';
 
 export default function Home() {
-  // Initialize state with the StreakData[] type
   const [streaks, setStreaks] = useState<StreakData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +16,6 @@ export default function Home() {
     setLoading(true);
     const result = await getAllStreaks();
 
-    // Check if the result is an error object
     if ('error' in result) {
       setError(result.error);
       setStreaks([]);
@@ -37,34 +35,60 @@ export default function Home() {
     }
   };
 
+  // The function to pass to StreakCard for deleting a streak (Placeholder for future feature)
+  const handleDeleteStreak = async (id: number) => {
+    // Implement delete action here, then await loadStreaks();
+    alert(`Attempting to delete streak with ID: ${id}`);
+    // await deleteStreak(id);
+    // await loadStreaks();
+  };
+
   useEffect(() => {
     loadStreaks();
   }, []);
 
-  if (loading) return <div className="text-center p-8 text-xl">Loading Streaks...</div>;
+  // Use a sleek full-screen loading state
+  if (loading) return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="text-teal-400 text-3xl font-semibold animate-pulse">
+        Loading Streak Hub...
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <h1 className="text-4xl font-extrabold mb-8 text-center text-green-400">
-        Streak Hub
+    // Applied deep gray background (bg-gray-950) from the UI plan
+    <div className="min-h-screen bg-gray-950 text-white p-8">
+      {/* Enhanced main title styling: huge, bold, and accented with teal-400 */}
+      <h1 className="text-6xl font-black mb-10 pt-4 text-center text-teal-400 tracking-wider">
+        🔥 Streak Hub
       </h1>
 
-      {error && <div className="text-center p-4 bg-red-800 rounded mb-6">{error}</div>}
+      {/* Prominent error display */}
+      {error && <div className="max-w-4xl mx-auto text-center p-4 bg-red-800 rounded-lg mb-8 text-lg font-medium shadow-xl">{error}</div>}
 
       <NewStreakForm onCreate={handleCreateNewStreak} />
 
-      <h2 className="text-2xl font-semibold mt-12 mb-6 border-b border-gray-700 pb-2">
-        My Active Streaks
+      {/* Section Divider and Title Styling */}
+      <h2 className="text-3xl font-bold mt-16 mb-8 text-center text-gray-300 border-b border-gray-700 pb-3">
+        My Active Goals
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Responsive Grid for Streak Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {streaks.length === 0 ? (
-          <p className="col-span-full text-center text-gray-400">
-            No streaks yet. Use the form above to add your first goal!
+          <p className="col-span-full text-center text-lg text-gray-500 p-12 bg-gray-900 rounded-xl border border-dashed border-gray-700">
+            No active streaks found. Start your journey by adding a new goal above!
           </p>
         ) : (
           streaks.map((streak) => (
-            <StreakCard key={streak.id} streak={streak} onResetSuccess={loadStreaks} />
+            <StreakCard
+              key={streak.id}
+              streak={streak}
+              onResetSuccess={loadStreaks}
+            // Passing placeholder for future delete feature
+            // onDelete={handleDeleteStreak} 
+            />
           ))
         )}
       </div>

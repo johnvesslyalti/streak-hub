@@ -4,6 +4,7 @@
 import { useFormStatus } from 'react-dom';
 import { resetStreak } from '@/app/actions';
 import { StreakData } from '@/types/streak';
+import { FormEvent } from 'react'; // Import FormEvent for correct typing
 
 // --- Props for StreakCard ---
 interface StreakCardProps {
@@ -18,13 +19,14 @@ interface ResetButtonProps {
 }
 
 function ResetButton({ streakId, onResetSuccess }: ResetButtonProps) {
-    // useFormStatus is great for providing immediate feedback (pending state)
     const { pending } = useFormStatus();
 
-    // We wrap the Server Action in a client function to handle the confirmation and refresh logic
-    const handleReset = async () => {
+    // The handler function is the key to managing the reset flow
+    const handleReset = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault(); // Prevent the default form submission
+
         // 1. Confirmation
-        if (!window.confirm(`Are you sure you want to reset the streak for "${streakId}"? This means you had a slip.`)) {
+        if (!window.confirm(`Are you sure you want to reset this streak? This means you had a slip.`)) {
             return;
         }
 
@@ -41,18 +43,19 @@ function ResetButton({ streakId, onResetSuccess }: ResetButtonProps) {
     };
 
     return (
-        // Note: This button is placed within an explicit <form> tag to leverage 
-        // the useFormStatus hook, even though the action is called manually above.
-        // We use a custom action handler, not the form's default action.
-        <button 
-      onClick= { handleReset }
-    type = "button" // Use type="button" since we handle submission via onClick
-    disabled = { pending }
-    className = "mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 w-full"
-        >
-        { pending? "Resetting...": "Slip! Reset" }
-        </button>
-  );
+        // The button is placed inside a <form> for useFormStatus to work correctly.
+        // We use the onSubmit handler for custom logic, including confirmation.
+        <form onSubmit={handleReset}>
+            <button
+                type="submit" // Use type="submit" for form submission
+                disabled={pending}
+                // Enhanced Tailwind Classes for the "Slip! Reset" button
+                className="mt-6 bg-red-800 hover:bg-red-900 text-white font-bold py-3 px-6 rounded-xl transition duration-150 disabled:opacity-50 w-full shadow-lg shadow-red-900/50"
+            >
+                {pending ? "Resetting..." : "Slip! Reset"}
+            </button>
+        </form>
+    );
 }
 
 // --- Main Streak Card Component ---
@@ -60,30 +63,35 @@ export default function StreakCard({ streak, onResetSuccess }: StreakCardProps) 
     const { id, name, currentStreak, maxStreak, startDate } = streak;
 
     return (
-        <div className= "bg-gray-800 p-6 rounded-lg shadow-xl border border-green-700 hover:border-green-400 transition duration-300" >
-        <h3 className="text-2xl font-bold text-center mb-4 text-green-400 uppercase tracking-wide truncate" >
-            { name }
+        // Enhanced Card Styling: Dark background, premium border, and subtle shadow
+        <div className="bg-gray-900 p-8 rounded-2xl shadow-2xl border-2 border-teal-800 hover:border-teal-500 transition duration-300 transform hover:scale-[1.02] shadow-teal-900/50">
+
+            <h3 className="text-3xl font-extrabold text-center mb-4 text-teal-400 uppercase tracking-widest truncate">
+                {name}
             </h3>
 
-            < div className = "text-center mb-6" >
-                <p className="text-sm uppercase tracking-wider text-gray-400" > Current Streak </p>
-                    < p className = "text-7xl font-black text-white leading-none" >
-                        { currentStreak }
-                        </p>
-                        < p className = "text-lg font-semibold mt-1 text-gray-300" > Days </p>
-                            </div>
-
-                            < div className = "flex justify-between text-sm text-gray-400 border-t border-gray-700 pt-3" >
-        <p>
-          ** Record:** <span className="text-yellow-400" > { maxStreak } Days </span>
-        </p>
-        <p>
-        ** Started:** <span className="text-gray-300" > { startDate } </span>
-            </p>
+            <div className="text-center mb-6">
+                <p className="text-sm uppercase tracking-wider text-gray-500">Current Streak</p>
+                {/* Hero Number Styling */}
+                <p className="text-8xl font-black text-teal-400 leading-none">
+                    {currentStreak}
+                </p>
+                <p className="text-xl font-semibold mt-1 text-gray-300">Days</p>
             </div>
 
-            < ResetButton streakId = { id } onResetSuccess = { onResetSuccess } />
+            <div className="flex justify-between text-base text-gray-400 border-t border-gray-700 pt-3 mt-4">
+                <p className="font-medium">
+                    {/* Record Styling */}
+                    <span className='font-bold'>Record:</span> <span className="text-yellow-400 font-bold">{maxStreak} Days</span>
+                </p>
+                <p className="text-gray-500">
+                    {/* Start Date Styling */}
+                    <span className='font-bold text-gray-400'>Started:</span> <span className="text-gray-300">{startDate}</span>
+                </p>
+            </div>
 
-                </div>
-  );
+            <ResetButton streakId={id} onResetSuccess={onResetSuccess} />
+
+        </div>
+    );
 }
