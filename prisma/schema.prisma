@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id      Int      @id @default(autoincrement())
+  email   String   @unique
+  name    String?
+  streaks Streak[] // 1 User to Many Streaks
+}
+
+model Streak {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  name          String
+  startDate     DateTime @map("start_date") // The day the streak began
+  maxStreakDays Int      @default(0) @map("max_streak_days") // Highest record
+  lastUpdated   DateTime @default(now()) @map("last_updated")
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, name]) // Ensures a user can't have two streaks with the same name
+  @@map("streaks")
+}
